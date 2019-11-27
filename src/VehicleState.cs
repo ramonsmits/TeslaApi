@@ -4,6 +4,8 @@ namespace TeslaApi
 {
     public class VehicleState
     {
+        public SoftwareUpdate software_update { get; set; }
+
         public bool locked { get; set; }
         public bool remote_start { get; set; }
 
