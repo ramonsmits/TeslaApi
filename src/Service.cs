@@ -76,9 +76,9 @@ namespace TeslaApi
             if (
                 Data != null && 
                 LastSleepRefresh > DateTime.Now.AddMinutes(-15) && 
-                !Data.charge_state.charging_state.Equals("charging", StringComparison.OrdinalIgnoreCase) && 
-                Data.vehicle_state.locked && 
-                Data.drive_state.power == 0 &&
+                !Data.ChargeState.ChargingState.Equals("charging", StringComparison.OrdinalIgnoreCase) && 
+                Data.VehicleState.Locked && 
+                Data.DriveState.Power == 0 &&
                 !forceFetch) return;
             
             bool vehicleIsAwake;
@@ -90,13 +90,13 @@ namespace TeslaApi
             if (VehicleId == 0)
             {
                 var vehicles = await GetVehicles();
-                var vehicle = string.IsNullOrWhiteSpace(VehicleName) ? vehicles.FirstOrDefault() : vehicles.FirstOrDefault(v => v.display_name.Equals(VehicleName, StringComparison.CurrentCultureIgnoreCase));
+                var vehicle = string.IsNullOrWhiteSpace(VehicleName) ? vehicles.FirstOrDefault() : vehicles.FirstOrDefault(v => v.DisplayName.Equals(VehicleName, StringComparison.CurrentCultureIgnoreCase));
                 if (vehicle != null)
                 {
-                    VehicleName = vehicle.display_name;
-                    VehicleId = vehicle.id;
-                    vehicleIsAwake = vehicle.state.Equals("online", StringComparison.CurrentCultureIgnoreCase);
-                    VehicleState = vehicle.state;
+                    VehicleName = vehicle.DisplayName;
+                    VehicleId = vehicle.Id;
+                    vehicleIsAwake = vehicle.State.Equals("online", StringComparison.CurrentCultureIgnoreCase);
+                    VehicleState = vehicle.State;
                     LastSleepRefresh = DateTime.Now;
                 }
                 else
@@ -108,8 +108,8 @@ namespace TeslaApi
             else
             {
                 var vehicle = await GetVehicle();
-                vehicleIsAwake = vehicle.state.Equals("online", StringComparison.CurrentCultureIgnoreCase);
-                VehicleState = vehicle.state;
+                vehicleIsAwake = vehicle.State.Equals("online", StringComparison.CurrentCultureIgnoreCase);
+                VehicleState = vehicle.State;
             }
 
             if (!vehicleIsAwake)
@@ -118,7 +118,7 @@ namespace TeslaApi
                     vehicleIsAwake = await WakeVehicle();
                 else if (Data != null)
                 {
-                    Data.state = "asleep";
+                    Data.State = "asleep";
                     LastSleepRefresh = DateTime.Now;
                 }
             }
@@ -156,8 +156,8 @@ namespace TeslaApi
         private async Task EnsureAwake()
         {
             var vehicle = await GetVehicle();
-            VehicleState = vehicle.state;
-            if (!vehicle.state.Equals("online", StringComparison.CurrentCultureIgnoreCase))
+            VehicleState = vehicle.State;
+            if (!vehicle.State.Equals("online", StringComparison.CurrentCultureIgnoreCase))
                 await WakeVehicle();
         }
 
@@ -168,7 +168,7 @@ namespace TeslaApi
             var result = await HttpHelper.HttpPostOAuth<TeslaResult<Vehicle>, string>(AccessToken, url, "");
             WakeUpSent = DateTime.Now;
             if (result?.response == null) return false; // || !result.response.Any()) return false;
-            return result.response.state.Equals("online", StringComparison.CurrentCultureIgnoreCase);
+            return result.response.State.Equals("online", StringComparison.CurrentCultureIgnoreCase);
         }
 
         private async Task VehicleSimpleCommand(string command)
@@ -207,15 +207,15 @@ namespace TeslaApi
         public async Task Unlock()
         {
             await VehicleSimpleCommand("door_unlock");
-            Data.vehicle_state.locked = false;
+            Data.VehicleState.Locked = false;
         }
 
         private async Task FrunkTrunk(string which)
         {
             await EnsureAwake();
             var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/actuate_trunk";
-            await HttpHelper.HttpPostOAuth<JObject, TrunkOption>(AccessToken, url, new TrunkOption(which));
-            Data.vehicle_state.locked = false;
+            await HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new { which_trunk = which });
+            Data.VehicleState.Locked = false;
         }
 
         public async Task Trunk()

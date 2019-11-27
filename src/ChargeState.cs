@@ -1,11 +1,21 @@
-﻿namespace TeslaApi
+﻿using Newtonsoft.Json;
+
+namespace TeslaApi
 {
     public class ChargeState
     {
-        public int battery_level { get; set; }
-        public double battery_range { get; set; }
-        public double charge_rate { get; set; }
-        public string charging_state { get; set; }
-        public int minutes_to_full_charge { get; set; }
+        [JsonProperty(PropertyName = "battery_level")]
+        public int BatteryPercentage { get; set; }
+        [JsonProperty(PropertyName = "battery_range")]
+        public double BatteryRange { get; set; }
+        [JsonProperty(PropertyName = "charge_rate")]
+        public double ChargingRate { get; set; }
+        [JsonProperty(PropertyName = "charging_state")]
+        public string ChargingState { get; set; }
+        /// <summary>
+        /// Time to full charge in minutes
+        /// </summary>
+        [JsonProperty(PropertyName = "minutes_to_full_charge")]
+        public int TimeToFullCharge { get; set; }
     }
 }

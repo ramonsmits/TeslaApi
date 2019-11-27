@@ -1,14 +1,28 @@
-﻿namespace TeslaApi
+﻿using Newtonsoft.Json;
+
+namespace TeslaApi
 {
     public class SoftwareUpdate
     {
-        public int download_perc { get; set; }
-        public int expected_duration_sec { get; set; }
-        public int install_perc { get; set; }
+        [JsonProperty(PropertyName = "download_perc")]
+        public int DownloadPercentage { get; set; }
+
+        /// <summary>
+        /// Expected install duration in seconds
+        /// </summary>
+        [JsonProperty(PropertyName = "expected_duration_sec")]
+        public int ExpectedDuration { get; set; }
+
+        [JsonProperty(PropertyName = "install_perc")]
+        public int InstallPercentage { get; set; }
+        
         /// <summary>
         /// Known values: {empty string}, available, scheduled, installing
         /// </summary>
-        public string status { get; set; }
-        public string version { get; set; }
+        [JsonProperty(PropertyName = "status")]
+        public string Status { get; set; }
+
+        [JsonProperty(PropertyName = "version")]
+        public string Version { get; set; }
     }
 }

@@ -64,7 +64,7 @@ namespace Tests
         public async Task Unlock()
         {
             await EnsureInitialized();
-            var initialState = TeslaService.Data.vehicle_state.locked;
+            var initialState = TeslaService.Data.VehicleState.Locked;
             if (!initialState)
             {
                 Console.WriteLine("Already unlocked");
@@ -72,14 +72,14 @@ namespace Tests
             }
             await TeslaService.Unlock();
             await TeslaService.GetStatus(true);
-            Assert.True(!TeslaService.Data.vehicle_state.locked, "Unlock failed.");
+            Assert.True(!TeslaService.Data.VehicleState.Locked, "Unlock failed.");
         }
 
         [Test, Explicit, Order(101)]
         public async Task Lock()
         {
             await EnsureInitialized();
-            var initialState = TeslaService.Data.vehicle_state.locked;
+            var initialState = TeslaService.Data.VehicleState.Locked;
             if (initialState)
             {
                 Console.WriteLine("Already locked");
@@ -87,35 +87,65 @@ namespace Tests
             }
             await TeslaService.Lock();
             await TeslaService.GetStatus(true);
-            Assert.True(TeslaService.Data.vehicle_state.locked, "Lock failed. Are doors, frunk, or trunk open?");
+            Assert.True(TeslaService.Data.VehicleState.Locked, "Lock failed. Are doors, frunk, or trunk open?");
         }
 
         [Test, Explicit, Order(102)]
-        public async Task Frunk()
+        public async Task PreconditionStart()
         {
             await EnsureInitialized();
-            var initialState = TeslaService.Data.vehicle_state.ft;
-            if (initialState != 0) Console.WriteLine("Already open");
-            await TeslaService.Frunk();
+            var initialState = TeslaService.Data.ClimateState.IsPreconditioning;
+            if (initialState)
+            {
+                Console.WriteLine("Already preconditioning");
+                Assert.Inconclusive("Already preconditioning");
+            }
+            await TeslaService.HvacStart();
             await TeslaService.GetStatus(true);
-            Assert.AreNotEqual(initialState, TeslaService.Data.vehicle_state.ft, "State is unchanged. It could have been open or will always fail if you have the Model3 with Hansshow kit.");
+            Assert.True(TeslaService.Data.ClimateState.IsPreconditioning, "State is not changed, the car should be preconditioning.");
         }
 
         [Test, Explicit, Order(103)]
+        public async Task PreconditionStop()
+        {
+            await EnsureInitialized();
+            var initialState = TeslaService.Data.ClimateState.IsPreconditioning;
+            if (!initialState)
+            {
+                Console.WriteLine("Not preconditioning");
+                Assert.Inconclusive("Not preconditioning");
+            }
+            await TeslaService.HvacStop();
+            await TeslaService.GetStatus(true);
+            Assert.False(TeslaService.Data.ClimateState.IsPreconditioning, "State is not changed, the car should not be preconditioning.");
+        }
+
+        [Test, Explicit, Order(151)]
+        public async Task Frunk()
+        {
+            await EnsureInitialized();
+            var initialState = TeslaService.Data.VehicleState.Frunk;
+            if (initialState != 0) Console.WriteLine("Already open");
+            await TeslaService.Frunk();
+            await TeslaService.GetStatus(true);
+            Assert.AreNotEqual(initialState, TeslaService.Data.VehicleState.Frunk, "State is unchanged. It could have been open or will always fail if you have the Model3 with Hansshow kit.");
+        }
+
+        [Test, Explicit, Order(152)]
         public async Task Trunk()
         {
             await EnsureInitialized();
-            var initialState = TeslaService.Data.vehicle_state.rt;
+            var initialState = TeslaService.Data.VehicleState.Trunk;
             await TeslaService.Trunk();
             await TeslaService.GetStatus(true);
-            Assert.AreNotEqual(initialState, TeslaService.Data.vehicle_state.rt, "State is unchanged. It could have been open or will always fail if you have the Model3 with Hansshow kit.");
+            Assert.AreNotEqual(initialState, TeslaService.Data.VehicleState.Trunk, "State is unchanged. It could have been open or will always fail if you have the Model3 with Hansshow kit.");
         }
 
-        [Test, Explicit, Order(104)]
+        [Test, Explicit, Order(200)]
         public async Task StartFailsWithoutPassword()
         {
             await EnsureInitialized();
-            var initialState = TeslaService.Data.vehicle_state.remote_start;
+            var initialState = TeslaService.Data.VehicleState.StartedRemotely;
             if (initialState)
             {
                 Console.WriteLine("Already started");
@@ -123,14 +153,14 @@ namespace Tests
             }
             Assert.ThrowsAsync<ArgumentException>(async () => { await TeslaService.Start(); });
             await TeslaService.GetStatus(true);
-            Assert.False(TeslaService.Data.vehicle_state.remote_start, "State is changed, the car should not have started.");
+            Assert.False(TeslaService.Data.VehicleState.StartedRemotely, "State is changed, the car should not have started.");
         }
 
-        [Test, Explicit, Order(105)]
+        [Test, Explicit, Order(201)]
         public async Task Start()
         {
             await EnsureInitialized();
-            var initialState = TeslaService.Data.vehicle_state.remote_start;
+            var initialState = TeslaService.Data.VehicleState.StartedRemotely;
             if (initialState)
             {
                 Console.WriteLine("Already started");
@@ -138,7 +168,7 @@ namespace Tests
             }
             await TeslaService.Start(Password);
             await TeslaService.GetStatus(true);
-            Assert.True(TeslaService.Data.vehicle_state.remote_start, "State is unchanged. The car did not start.");
+            Assert.True(TeslaService.Data.VehicleState.StartedRemotely, "State is unchanged. The car did not start.");
         }
     }
 }
