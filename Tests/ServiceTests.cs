@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using TeslaApi;
@@ -32,21 +34,49 @@ namespace Tests
         {
             if (TeslaService == null)
                 await Initialize();
+        }
 
+        private async Task EnsureReady()
+        {
+            await EnsureInitialized();
+            await TeslaService.GetStatus();
+            Assert.NotNull(TeslaService.Data, "No data retrieved. Car may not be awake yet.");
+        }
+
+        [Test, Order(0)]
+        public async Task Initialize()
+        {
+            TeslaService = new Service(Email, Password);
+            await TeslaService.Initialize();
         }
 
         [Test, Order(1)]
-        public async Task Initialize()
+        public async Task WakeVehicle()
         {
-            TeslaService = new Service(Email, Password, VehicleName);
-            await TeslaService.Initialize();
+            await EnsureInitialized();
             await TeslaService.GetStatus();
-            Assert.NotNull(TeslaService.Data, "No data retrieved. Car may not be awake yet.");
+            if (!TeslaService.VehicleState.Equals("asleep", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Vehicle is not asleep");
+                Assert.Inconclusive("Vehicle is not asleep");
+            }
+            await TeslaService.WakeVehicle();
+            var sw = new Stopwatch();
+            sw.Start();
+            do
+            {
+                Thread.Sleep(1000);
+                await TeslaService.GetStatus();
+                if (sw.Elapsed > TimeSpan.FromSeconds(60)) break;
+            } while (TeslaService.VehicleState.Equals("asleep", StringComparison.OrdinalIgnoreCase));
+            Assert.AreEqual("online", TeslaService.VehicleState, "Vehicle is not online after 1 minute.");
+            Console.WriteLine($"Vehicle woke after {sw.Elapsed.TotalSeconds} seconds");
         }
 
         [Test, Order(2)]
         public async Task DoesNotReFetch()
         {
+            await EnsureReady();
             var fetched = TeslaService.Data.Fetched;
             await TeslaService.GetStatus();
             Assert.AreEqual(fetched, TeslaService.Data.Fetched, "A refresh should not have happened.");
@@ -55,6 +85,7 @@ namespace Tests
         [Test, Order(3)]
         public async Task DoesReFetchWhenForced()
         {
+            await EnsureReady();
             var fetched = TeslaService.Data.Fetched;
             await TeslaService.GetStatus(true);
             Assert.Less(fetched, TeslaService.Data.Fetched, "A refresh should have happened.");
@@ -63,7 +94,7 @@ namespace Tests
         [Test, Explicit, Order(100)]
         public async Task DoorsUnlock()
         {
-            await EnsureInitialized();
+            await EnsureReady();
             var initialState = TeslaService.Data.VehicleState.Locked;
             if (!initialState)
             {
@@ -78,7 +109,7 @@ namespace Tests
         [Test, Explicit, Order(101)]
         public async Task DoorsLock()
         {
-            await EnsureInitialized();
+            await EnsureReady();
             var initialState = TeslaService.Data.VehicleState.Locked;
             if (initialState)
             {
@@ -93,7 +124,7 @@ namespace Tests
         [Test, Explicit, Order(102)]
         public async Task PreconditionStart()
         {
-            await EnsureInitialized();
+            await EnsureReady();
             var initialState = TeslaService.Data.ClimateState.IsPreconditioning;
             if (initialState)
             {
@@ -108,7 +139,7 @@ namespace Tests
         [Test, Explicit, Order(103)]
         public async Task PreconditionStop()
         {
-            await EnsureInitialized();
+            await EnsureReady();
             var initialState = TeslaService.Data.ClimateState.IsPreconditioning;
             if (!initialState)
             {
@@ -123,7 +154,7 @@ namespace Tests
         [Test, Explicit, Order(104)]
         public async Task ChargePortOpen()
         {
-            await EnsureInitialized();
+            await EnsureReady();
             var initialState = TeslaService.Data.ChargeState.ChargeDoorOpen;
             if (initialState)
             {
@@ -132,13 +163,13 @@ namespace Tests
             }
             await TeslaService.ChargePortOpen();
             await TeslaService.GetStatus(true);
-            Assert.True(!TeslaService.Data.ChargeState.ChargeDoorOpen, "Open failed.");
+            Assert.True(TeslaService.Data.ChargeState.ChargeDoorOpen, "Open failed.");
         }
 
         [Test, Explicit, Order(105)]
         public async Task ChargePortClose()
         {
-            await EnsureInitialized();
+            await EnsureReady();
             var initialState = TeslaService.Data.ChargeState.ChargeDoorOpen;
             if (!initialState)
             {
@@ -153,7 +184,7 @@ namespace Tests
         [Test, Explicit, Order(151)]
         public async Task TrunkFront()
         {
-            await EnsureInitialized();
+            await EnsureReady();
             var initialState = TeslaService.Data.VehicleState.Frunk;
             if (initialState != 0) Console.WriteLine("Already open");
             await TeslaService.Frunk();
@@ -164,7 +195,7 @@ namespace Tests
         [Test, Explicit, Order(152)]
         public async Task TrunkRear()
         {
-            await EnsureInitialized();
+            await EnsureReady();
             var initialState = TeslaService.Data.VehicleState.Trunk;
             await TeslaService.Trunk();
             await TeslaService.GetStatus(true);
@@ -174,7 +205,7 @@ namespace Tests
         [Test, Explicit, Order(200)]
         public async Task StartFailsWithoutPassword()
         {
-            await EnsureInitialized();
+            await EnsureReady();
             var initialState = TeslaService.Data.VehicleState.StartedRemotely;
             if (initialState)
             {
@@ -189,7 +220,7 @@ namespace Tests
         [Test, Explicit, Order(201)]
         public async Task Start()
         {
-            await EnsureInitialized();
+            await EnsureReady();
             var initialState = TeslaService.Data.VehicleState.StartedRemotely;
             if (initialState)
             {

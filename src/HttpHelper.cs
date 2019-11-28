@@ -64,7 +64,7 @@ namespace TeslaApi
         private static void AddAgent(HttpClient hc)
         {
             if (string.IsNullOrWhiteSpace(UserAgent)) return;
-            var userAgent = new ProductInfoHeaderValue(new ProductHeaderValue("MyHouse"));
+            var userAgent = new ProductInfoHeaderValue(new ProductHeaderValue("PintSizeMeTeslaApi"));
             hc.DefaultRequestHeaders.UserAgent.Add(userAgent);
         }
 

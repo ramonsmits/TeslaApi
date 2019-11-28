@@ -161,7 +161,7 @@ namespace TeslaApi
                 await WakeVehicle();
         }
 
-        private async Task<bool> WakeVehicle()
+        public async Task<bool> WakeVehicle()
         {
             if (WakeUpSent > DateTime.Now.AddMinutes(-1)) return false;
             var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/wake_up";
