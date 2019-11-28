@@ -17,5 +17,7 @@ namespace TeslaApi
         /// </summary>
         [JsonProperty(PropertyName = "minutes_to_full_charge")]
         public int TimeToFullCharge { get; set; }
+        [JsonProperty(PropertyName= "charge_port_door_open")]
+        public bool ChargeDoorOpen { get; set; }
     }
 }

@@ -5,22 +5,7 @@ namespace TeslaApi
     public class DriveState
     {
         /// <summary>
-        /// Observed values:
-        /// Power null:
-        ///   Software updating
-        /// Power -11:
-        ///   Charging
-        /// Power 0:
-        ///   Software downloaded
-        ///   Software scheduled
-        ///   Charge complete
-        /// Power 1:
-        ///   HVAC Preconditioning
-        ///   In drive, stopped
-        /// Power 2:
-        ///   Parked
-        /// Power 7: 
-        ///   Drive - speed 29 mph
+        /// Power output in kilowatt's, negative value when regen or charging
         /// </summary>
         [JsonProperty(PropertyName = "power")]
         public int Power { get; set; }

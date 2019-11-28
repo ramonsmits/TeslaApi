@@ -61,7 +61,7 @@ namespace Tests
         }
 
         [Test, Explicit, Order(100)]
-        public async Task Unlock()
+        public async Task DoorsUnlock()
         {
             await EnsureInitialized();
             var initialState = TeslaService.Data.VehicleState.Locked;
@@ -76,7 +76,7 @@ namespace Tests
         }
 
         [Test, Explicit, Order(101)]
-        public async Task Lock()
+        public async Task DoorsLock()
         {
             await EnsureInitialized();
             var initialState = TeslaService.Data.VehicleState.Locked;
@@ -120,8 +120,38 @@ namespace Tests
             Assert.False(TeslaService.Data.ClimateState.IsPreconditioning, "State is not changed, the car should not be preconditioning.");
         }
 
+        [Test, Explicit, Order(104)]
+        public async Task ChargePortOpen()
+        {
+            await EnsureInitialized();
+            var initialState = TeslaService.Data.ChargeState.ChargeDoorOpen;
+            if (initialState)
+            {
+                Console.WriteLine("Already open");
+                Assert.Inconclusive("Already open");
+            }
+            await TeslaService.ChargePortOpen();
+            await TeslaService.GetStatus(true);
+            Assert.True(!TeslaService.Data.ChargeState.ChargeDoorOpen, "Open failed.");
+        }
+
+        [Test, Explicit, Order(105)]
+        public async Task ChargePortClose()
+        {
+            await EnsureInitialized();
+            var initialState = TeslaService.Data.ChargeState.ChargeDoorOpen;
+            if (!initialState)
+            {
+                Console.WriteLine("Already closed");
+                Assert.Inconclusive("Already closed");
+            }
+            await TeslaService.ChargePortClose();
+            await TeslaService.GetStatus(true);
+            Assert.True(TeslaService.Data.ChargeState.ChargeDoorOpen, "Close failed.");
+        }
+
         [Test, Explicit, Order(151)]
-        public async Task Frunk()
+        public async Task TrunkFront()
         {
             await EnsureInitialized();
             var initialState = TeslaService.Data.VehicleState.Frunk;
@@ -132,7 +162,7 @@ namespace Tests
         }
 
         [Test, Explicit, Order(152)]
-        public async Task Trunk()
+        public async Task TrunkRear()
         {
             await EnsureInitialized();
             var initialState = TeslaService.Data.VehicleState.Trunk;
