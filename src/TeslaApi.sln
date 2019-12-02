@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28307.902
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TeslaApi", "TeslaApi.csproj", "{EECAA1D0-8A6E-4BB1-81FD-7EDBC86ABDD6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "..\Tests\Tests.csproj", "{865DB999-13C4-48B1-890D-95B259A2804C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "..\Tests\Tests.csproj", "{865DB999-13C4-48B1-890D-95B259A2804C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

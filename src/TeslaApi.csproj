@@ -10,7 +10,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>Jon R. Helms</Authors>
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
     <Company>PintSize.Me</Company>
     <PackageProjectUrl>https://github.com/skipfire/TeslaApi</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="SplunkIt" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

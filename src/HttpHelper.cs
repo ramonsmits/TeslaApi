@@ -61,23 +61,6 @@ namespace TeslaApi
             }
         }
 
-        internal static async Task PostSplunk<TBody>(string url, TBody body, string authorization)
-        {
-            var bodyContent = JsonConvert.SerializeObject(body);
-            using (var content = new StringContent(bodyContent, Encoding.UTF8, "application/json"))
-            {
-                using (var hc = CreateHttpClient())
-                {
-                    AddAgent(hc);
-                    hc.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Splunk", authorization);
-                    hc.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    var result = await hc.PostAsync(url, content);
-                    var resultContent = await result.Content.ReadAsStringAsync();
-                    hc.DefaultRequestHeaders.Remove("Splunk");
-                }
-            }
-        }
-
         private static void AddAgent(HttpClient hc)
         {
             if (string.IsNullOrWhiteSpace(UserAgent)) return;
