@@ -7,7 +7,6 @@ namespace TeslaApi
     {
         None = 0,
         RemoteStartWithoutPassword = 1,
-        BlockMetrics = 2,
-        Tests = 4
+        BlockMetrics = 2
     }
 }

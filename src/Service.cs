@@ -15,6 +15,7 @@ namespace TeslaApi
     {
         internal static ConfigurationOptions Options;
         internal static string DeviceId;
+        internal static string Client;
 
         private const string UrlBase = "https://owner-api.teslamotors.com";
         private const string TeslaClientId = "81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384";
@@ -51,8 +52,9 @@ namespace TeslaApi
         /// <param name="email"></param>
         /// <param name="password"></param>
         /// <param name="vehicleName"></param>
-        public Service(string deviceId, string email, string password, string vehicleName = "")
+        public Service(string client, string deviceId, string email, string password, string vehicleName = "")
         {
+            Client = client;
             DeviceId = deviceId;
             Email = email;
             Password = password;
@@ -123,7 +125,8 @@ namespace TeslaApi
 
             if (!vehicleIsAwake)
             {
-                if (Data == null || Data.Fetched < DateTime.Now.AddHours(-4) || forceFetch)
+                if (forceFetch) Data = null;
+                if (Data == null || Data.Fetched < DateTime.Now.AddHours(-4))
                     vehicleIsAwake = await WakeVehicle();
                 else if (Data != null)
                 {

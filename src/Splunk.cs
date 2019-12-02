@@ -6,6 +6,8 @@ namespace TeslaApi
 {
     internal static class Splunk
     {
+        private const string SplunkUrl = "http://teslaapi-splunk.pintsize.me:8088/services/collector/event";
+
         internal static async Task<T> TimeItToSplunk<T>(string key, Func<Task<T>> action)
         {
             var sw = new Stopwatch();
@@ -30,11 +32,9 @@ namespace TeslaApi
             try
             {
                 if (Service.Options.HasFlag(ConfigurationOptions.BlockMetrics)) return;
-                var splunkUrl = "http://sfs05.skipfire.local:8088/services/collector/event";
                 var splunkAuth = "7a8f797f-beb1-4acf-9dab-bd76370e2beb";
-                var indexName = Service.Options.HasFlag(ConfigurationOptions.Tests) ? "teslaapi_test" : "teslaapi";
-                var eventPayload = new { index = indexName, source = Service.DeviceId, @event = new { key, value } };
-                HttpHelper.PostSplunk<object>(splunkUrl, eventPayload, splunkAuth).ContinueWith(Completer);
+                var eventPayload = new { index = "teslaapi", source = Service.DeviceId, @event = new { Service.Client, key, value } };
+                HttpHelper.PostSplunk<object>(SplunkUrl, eventPayload, splunkAuth).ContinueWith(Completer);
             }
             catch (Exception e)
             {
@@ -48,11 +48,9 @@ namespace TeslaApi
             try
             {
                 if (Service.Options.HasFlag(ConfigurationOptions.BlockMetrics)) return;
-                var splunkUrl = "http://sfs05.skipfire.local:8088/services/collector/event";
                 var splunkAuth = "7a8f797f-beb1-4acf-9dab-bd76370e2beb";
-                var indexName = Service.Options.HasFlag(ConfigurationOptions.Tests) ? "teslaapi_test" : "teslaapi";
-                var eventPayload = new { index = indexName, source = Service.DeviceId, @event = new { value } };
-                HttpHelper.PostSplunk<object>(splunkUrl, eventPayload, splunkAuth).ContinueWith(Completer);
+                var eventPayload = new { index = "teslaapi", source = Service.DeviceId, @event = new { Service.Client, value } };
+                HttpHelper.PostSplunk<object>(SplunkUrl, eventPayload, splunkAuth).ContinueWith(Completer);
             }
             catch (Exception e)
             {

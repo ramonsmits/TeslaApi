@@ -48,8 +48,8 @@ namespace Tests
         [Test, Order(0)]
         public async Task Initialize()
         {
-            TeslaService = new Service(DeviceId, Email, Password, VehicleName);
-            await TeslaService.Initialize(ConfigurationOptions.Tests);
+            TeslaService = new Service("TeslaApi.Tests", DeviceId, Email, Password, VehicleName);
+            await TeslaService.Initialize();
             Assert.True(TeslaService.IsAuthenticated);
         }
 
