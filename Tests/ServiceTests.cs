@@ -14,10 +14,12 @@ namespace Tests
         private string Password;
         private string VehicleName;
         private Service TeslaService;
+        private string DeviceId;
 
         [SetUp]
         public void Setup()
         {
+            DeviceId = Environment.MachineName;
             var fileName = "..\\..\\..\\Auth.user"; //bin\debug\netcoreapp2.1
             if (!File.Exists(fileName))
                 Assert.Fail("Auth.user not found in Tests folder.");
@@ -46,8 +48,9 @@ namespace Tests
         [Test, Order(0)]
         public async Task Initialize()
         {
-            TeslaService = new Service(Email, Password);
-            await TeslaService.Initialize();
+            TeslaService = new Service(DeviceId, Email, Password, VehicleName);
+            await TeslaService.Initialize(ConfigurationOptions.Tests);
+            Assert.True(TeslaService.IsAuthenticated);
         }
 
         [Test, Order(1)]
@@ -118,7 +121,7 @@ namespace Tests
             }
             await TeslaService.Lock();
             await TeslaService.GetStatus(true);
-            Assert.True(TeslaService.Data.VehicleState.Locked, "Lock failed. Are doors, frunk, or trunk open?");
+            Assert.True(TeslaService.Data.VehicleState.Locked, "Lock failed. Are doors, frunk, trunk, or charging port open?");
         }
 
         [Test, Explicit, Order(102)]

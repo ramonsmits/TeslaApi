@@ -6,6 +6,8 @@ namespace TeslaApi
     public enum ConfigurationOptions
     {
         None = 0,
-        RemoteStartWithoutPassword = 1
+        RemoteStartWithoutPassword = 1,
+        BlockMetrics = 2,
+        Tests = 4
     }
 }
