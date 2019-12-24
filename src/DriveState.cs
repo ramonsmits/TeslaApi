@@ -8,7 +8,7 @@ namespace TeslaApi
         /// Power output in kilowatt's, negative value when regen or charging
         /// </summary>
         [JsonProperty(PropertyName = "power")]
-        public int Power { get; set; }
+        public int? Power { get; set; }
         [JsonProperty(PropertyName = "shift_state")]
         public string Shifter { get; set; }
         [JsonProperty(PropertyName = "latitude")]

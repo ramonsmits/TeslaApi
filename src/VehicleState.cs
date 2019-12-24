@@ -48,21 +48,21 @@ namespace TeslaApi
         /// Driver side front window
         /// </summary>
         [JsonProperty(PropertyName = "fd_window")]
-        public WindowState Window_DriverFront { get; set; }
+        public WindowState? Window_DriverFront { get; set; }
         /// <summary>
         /// Driver side rear window
         /// </summary>
         [JsonProperty(PropertyName = "rd_window")]
-        public WindowState Window_DriverRear { get; set; }
+        public WindowState? Window_DriverRear { get; set; }
         /// <summary>
         /// Passenger side front window
         /// </summary>
         [JsonProperty(PropertyName = "fp_window")]
-        public WindowState Window_PassengerFront { get; set; }
+        public WindowState? Window_PassengerFront { get; set; }
         /// <summary>
         /// Passenger side front window
         /// </summary>
         [JsonProperty(PropertyName = "rp_window")]
-        public WindowState Window_PassengerRear { get; set; }
+        public WindowState? Window_PassengerRear { get; set; }
     }
 }

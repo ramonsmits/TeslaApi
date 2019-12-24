@@ -159,7 +159,8 @@ namespace Tests
         {
             await EnsureReady();
             var initialState = TeslaService.Data.ChargeState.ChargeDoorOpen;
-            if (initialState)
+            if(!initialState.HasValue) Assert.Inconclusive("Null state.");
+            if (initialState.Value)
             {
                 Console.WriteLine("Already open");
                 Assert.Inconclusive("Already open");
@@ -174,7 +175,8 @@ namespace Tests
         {
             await EnsureReady();
             var initialState = TeslaService.Data.ChargeState.ChargeDoorOpen;
-            if (!initialState)
+            if (!initialState.HasValue) Assert.Inconclusive("Null state.");
+            if (!initialState.Value)
             {
                 Console.WriteLine("Already closed");
                 Assert.Inconclusive("Already closed");
