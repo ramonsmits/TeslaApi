@@ -10,7 +10,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>Jon R. Helms</Authors>
-    <Version>1.0.8</Version>
+    <Version>1.0.9</Version>
     <Company>PintSize.Me</Company>
     <PackageProjectUrl>https://github.com/skipfire/TeslaApi</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
