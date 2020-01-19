@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using TeslaApi;
+using TeslaApi.Enums;
 
 namespace Tests
 {
@@ -140,6 +141,41 @@ namespace Tests
         }
 
         [Test, Explicit, Order(103)]
+        public async Task HeatSeat()
+        {
+            await EnsureReady();
+            var initialState = TeslaService.Data.ClimateState.SeatHeaterFrontLeft;
+            int level = initialState != 1 ? 1 : 2;
+            await TeslaService.SeatHeater(Seat.FrontLeft, level);
+            await TeslaService.SeatHeater(Seat.FrontRight, 1);
+            await TeslaService.SeatHeater(Seat.RearLeft, 2);
+            await TeslaService.SeatHeater(Seat.RearCenter, 3);
+            await TeslaService.SeatHeater(Seat.RearRight, 1);
+            await TeslaService.GetStatus(true);
+            Assert.AreEqual(level, TeslaService.Data.ClimateState.SeatHeaterFrontLeft, "Heat seat failed.");
+        }
+
+        [Test, Explicit, Order(104)]
+        public async Task HeatSeatStop()
+        {
+            await EnsureReady();
+            var initialState = TeslaService.Data.ClimateState.SeatHeaterFrontLeft;
+            if (initialState == 0)
+            {
+                Console.WriteLine("Already not heating");
+                Assert.Inconclusive("Already not heating");
+            }
+
+            await TeslaService.SeatHeater(Seat.FrontLeft, 0);
+            await TeslaService.SeatHeater(Seat.FrontRight, 0);
+            await TeslaService.SeatHeater(Seat.RearLeft, 0);
+            await TeslaService.SeatHeater(Seat.RearCenter, 0);
+            await TeslaService.SeatHeater(Seat.RearRight, 0);
+            await TeslaService.GetStatus(true);
+            Assert.AreEqual(0, TeslaService.Data.ClimateState.SeatHeaterFrontLeft, "Heat seat stop failed.");
+        }
+
+        [Test, Explicit, Order(105)]
         public async Task PreconditionStop()
         {
             await EnsureReady();
@@ -154,7 +190,7 @@ namespace Tests
             Assert.False(TeslaService.Data.ClimateState.IsPreconditioning, "State is not changed, the car should not be preconditioning.");
         }
 
-        [Test, Explicit, Order(104)]
+        [Test, Explicit, Order(106)]
         public async Task ChargePortOpen()
         {
             await EnsureReady();
@@ -170,7 +206,7 @@ namespace Tests
             Assert.True(TeslaService.Data.ChargeState.ChargeDoorOpen, "Open failed.");
         }
 
-        [Test, Explicit, Order(105)]
+        [Test, Explicit, Order(107)]
         public async Task ChargePortClose()
         {
             await EnsureReady();
@@ -194,7 +230,7 @@ namespace Tests
             if (initialState != 0) Console.WriteLine("Already open");
             await TeslaService.Frunk();
             await TeslaService.GetStatus(true);
-            Assert.AreNotEqual(initialState, TeslaService.Data.VehicleState.Frunk, "State is unchanged. It could have been open or will always fail if you have the Model3 with Hansshow kit.");
+            Assert.AreNotEqual(initialState, TeslaService.Data.VehicleState.Frunk, "State is unchanged.");
         }
 
         [Test, Explicit, Order(152)]
@@ -204,7 +240,7 @@ namespace Tests
             var initialState = TeslaService.Data.VehicleState.Trunk;
             await TeslaService.Trunk();
             await TeslaService.GetStatus(true);
-            Assert.AreNotEqual(initialState, TeslaService.Data.VehicleState.Trunk, "State is unchanged. It could have been open or will always fail if you have the Model3 with Hansshow kit.");
+            Assert.AreNotEqual(initialState, TeslaService.Data.VehicleState.Trunk, "State is unchanged. It could have been open or may fail if you have the Model3 with Hansshow kit.");
         }
 
         [Test, Explicit, Order(200)]

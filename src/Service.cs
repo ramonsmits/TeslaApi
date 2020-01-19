@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SplunkIt;
+using TeslaApi.Enums;
 
 namespace TeslaApi
 {
@@ -245,6 +246,17 @@ namespace TeslaApi
         {
             await VehicleSimpleCommand("door_unlock");
             Data.VehicleState.Locked = false;
+        }
+
+        public async Task SeatHeater(Seat seat, int level)
+        {
+            await EnsureAwake();
+            await Splunk.Time("http remote_seat_heater_request_" + seat, async () =>
+            {
+                var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/remote_seat_heater_request";
+                await HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new { heater = seat, level });
+                Data.VehicleState.Locked = false;
+            });
         }
 
         private async Task FrunkTrunk(string which)

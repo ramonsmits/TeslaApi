@@ -14,5 +14,16 @@ namespace TeslaApi
         public bool IsOn { get; set; }
         [JsonProperty(PropertyName = "is_preconditioning")]
         public bool IsPreconditioning { get; set; }
+
+        [JsonProperty(PropertyName = "seat_heater_left")]
+        public int SeatHeaterFrontLeft { get; set; }
+        [JsonProperty(PropertyName = "seat_heater_right")]
+        public int SeatHeaterFrontRight { get; set; }
+        [JsonProperty(PropertyName = "seat_heater_rear_left")]
+        public int SeatHeaterRearLeft { get; set; }
+        [JsonProperty(PropertyName = "seat_heater_rear_center")]
+        public int SeatHeaterRearCenter { get; set; }
+        [JsonProperty(PropertyName = "seat_heater_rear_right")]
+        public int SeatHeaterRearRight { get; set; }
     }
 }
