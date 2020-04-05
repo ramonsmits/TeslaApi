@@ -185,6 +185,16 @@ namespace TeslaApi
             });
         }
 
+        public void SetVehicle(long vehicleId, string vehicleName)
+        {
+            VehicleId = vehicleId;
+            VehicleName = vehicleName;
+            Data = null;
+            VehicleState = "";
+            LastRefresh = DateTime.MinValue;
+            LastSleepRefresh = DateTime.MinValue;
+        }
+
         private async Task EnsureAwake()
         {
             var vehicle = await GetVehicle();
@@ -225,7 +235,6 @@ namespace TeslaApi
         {
             await VehicleSimpleCommand("charge_port_door_close");
         }
-
 
         public async Task HvacStart()
         {

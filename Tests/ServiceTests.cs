@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -14,6 +15,7 @@ namespace Tests
         private string Email;
         private string Password;
         private string VehicleName;
+        private string SecondVehicleName;
         private Service TeslaService;
         private string DeviceId;
 
@@ -29,8 +31,10 @@ namespace Tests
                 Assert.Fail("Auth.user file did not have enough lines.");
             Email = lines[0];
             Password = lines[1];
-            if(lines.Length >= 3)
+            if (lines.Length >= 3)
                 VehicleName = lines[2];
+            if (lines.Length >= 4)
+                SecondVehicleName = lines[3];
         }
 
         private async Task EnsureInitialized()
@@ -272,5 +276,33 @@ namespace Tests
             await TeslaService.GetStatus(true);
             Assert.True(TeslaService.Data.VehicleState.StartedRemotely, "State is unchanged. The car did not start.");
         }
+
+        [Test, Order(301)]
+        public async Task ChangeVehicle()
+        {
+            if(string.IsNullOrWhiteSpace(SecondVehicleName))
+                Assert.Inconclusive("Second vehicle name not specified.");
+            await EnsureInitialized();
+            var vehicles = await TeslaService.GetVehicles();
+            var vehicle = vehicles.FirstOrDefault(v => v.DisplayName.Equals(SecondVehicleName));
+            Assert.AreEqual(VehicleName, TeslaService.Data.DisplayName, "First vehicle name expected.");
+            TeslaService.SetVehicle(vehicle.Id, VehicleName);
+            await TeslaService.GetStatus();
+            if (TeslaService.VehicleState.Equals("asleep", StringComparison.OrdinalIgnoreCase))
+            {
+                await TeslaService.WakeVehicle();
+                var sw = new Stopwatch();
+                sw.Start();
+                do
+                {
+                    Thread.Sleep(1000);
+                    await TeslaService.GetStatus();
+                    if (sw.Elapsed > TimeSpan.FromSeconds(60)) break;
+                } while (TeslaService.VehicleState.Equals("asleep", StringComparison.OrdinalIgnoreCase));
+                Assert.AreEqual("online", TeslaService.VehicleState, "Vehicle is not online after 1 minute.");
+            }
+            Assert.AreEqual(SecondVehicleName, TeslaService.Data.DisplayName, "Second vehicle name expected.");
+        }
+
     }
 }
