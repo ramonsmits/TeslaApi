@@ -18,6 +18,6 @@ namespace TeslaApi
         
         public DateTime Fetched { get; }
 
-        public VehicleData() { Fetched = DateTime.Now; }
+        public VehicleData() { Fetched = DateTime.UtcNow; }
     }
 }
