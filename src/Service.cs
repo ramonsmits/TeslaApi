@@ -5,9 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SplunkIt;
 using TeslaApi.Enums;
 
 namespace TeslaApi
@@ -16,19 +14,14 @@ namespace TeslaApi
     public class Service
     {
         internal static ConfigurationOptions Options;
-        internal static string DeviceId;
-        internal static string Client;
 
         private const string UrlBase = "https://owner-api.teslamotors.com";
         private const string TeslaClientId = "81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384";
         private const string TeslaClientSecret = "c7257eb71a564034f9419ee651c7d0e5f7aa6bfbd18bafb5c5c033b093bb2fa3";
-        private const string SplunkUrl = "http://teslaapi-splunk.pintsize.me:8088/services/collector/event";
-        private const string SplunkToken = "7a8f797f-beb1-4acf-9dab-bd76370e2beb";
-        private const string SplunkIndex = "teslaapi";
 
         private static string Email;
         private static string Password;
-        private Splunk Splunk;
+        private ITelemetryProvider TelemetryProvider;
 
         public VehicleData Data;
         public string VehicleName { get; private set; }
@@ -46,13 +39,13 @@ namespace TeslaApi
         public void SetWebProxy(IWebProxy webProxy)
         {
             HttpHelper.Proxy = webProxy;
-            Splunk.SetWebProxy(webProxy);
+            TelemetryProvider?.SetWebProxy(webProxy);
         }
 
         public void ClearWebProxy()
         {
             HttpHelper.Proxy = null;
-            Splunk.ClearWebProxy();
+            TelemetryProvider.ClearWebProxy();
         }
 
         /// <summary>
@@ -61,29 +54,26 @@ namespace TeslaApi
         /// <param name="email"></param>
         /// <param name="password"></param>
         /// <param name="vehicleName"></param>
-        public Service(string client, string deviceId, string email, string password, string vehicleName = "")
+        public Service(string email, string password, string vehicleName = "", ITelemetryProvider telemetryProvider = null)
         {
-            Client = client;
-            DeviceId = deviceId;
             Email = email;
             Password = password;
             VehicleName = vehicleName;
             IsInitialized = false;
             HttpHelper.UserAgent = "PintSizeMeTeslaApi";
-            Splunk = new Splunk(SplunkUrl, SplunkToken, SplunkIndex, Client, DeviceId);
+            TelemetryProvider = telemetryProvider;
         }
 
         public async Task Initialize(ConfigurationOptions configOptions = ConfigurationOptions.None)
         {
             Options = configOptions;
-            Splunk.Enabled = !Options.HasFlag(ConfigurationOptions.BlockMetrics);
             await Authenticate();
             IsInitialized = true;
         }
 
         private async Task Authenticate()
         {
-            await Splunk.Time("http oauth", async () =>
+            await Time("http oauth", async () =>
             {
                 var url = $"{UrlBase}/oauth/token";
                 var result = await HttpHelper.HttpPost<TeslaOAuthResult, TeslaOAuthRequest>(url, new TeslaOAuthRequest());
@@ -157,7 +147,7 @@ namespace TeslaApi
 
         public async Task<List<Vehicle>> GetVehicles()
         {
-            return await Splunk.Time("http vehicles", async () =>
+            return await Time("http vehicles", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles";
                 var result = await HttpHelper.HttpGetOAuth<TeslaResult<List<Vehicle>>>(AccessToken, url);
@@ -167,7 +157,7 @@ namespace TeslaApi
 
         private async Task<Vehicle> GetVehicle()
         {
-            return await Splunk.Time("http vehicle", async () =>
+            return await Time("http vehicle", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}";
                 var result = await HttpHelper.HttpGetOAuth<TeslaResult<Vehicle>>(AccessToken, url);
@@ -178,7 +168,7 @@ namespace TeslaApi
         private async Task GetVehicleData()
         {
             var now = DateTime.UtcNow;
-            await Splunk.Time("http vehicle_data", async () =>
+            await Time("http vehicle_data", async () =>
             {
                 var resultData = await HttpHelper.HttpGetOAuth<TeslaResult<VehicleData>>(AccessToken, $"{UrlBase}/api/1/vehicles/{VehicleId}/vehicle_data");
                 Data = resultData.response;
@@ -209,7 +199,7 @@ namespace TeslaApi
         {
             var now = DateTime.UtcNow;
             if (WakeUpSent > now.AddMinutes(-1)) return false;
-            return await Splunk.Time("http wake_up", async () =>
+            return await Time("http wake_up", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/wake_up";
                 var result = await HttpHelper.HttpPostOAuth<TeslaResult<Vehicle>, string>(AccessToken, url, "");
@@ -222,7 +212,7 @@ namespace TeslaApi
         private async Task VehicleSimpleCommand(string command)
         {
             await EnsureAwake();
-            await Splunk.Time("http " + command, async () =>
+            await Time("http " + command, async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/{command}";
                 await HttpHelper.HttpPostOAuth<JObject, string>(AccessToken, url, "");
@@ -263,7 +253,7 @@ namespace TeslaApi
         public async Task SeatHeater(Seat seat, int level)
         {
             await EnsureAwake();
-            await Splunk.Time("http remote_seat_heater_request_" + seat, async () =>
+            await Time("http remote_seat_heater_request_" + seat, async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/remote_seat_heater_request";
                 await HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new { heater = seat, level });
@@ -274,7 +264,7 @@ namespace TeslaApi
         private async Task FrunkTrunk(string which)
         {
             await EnsureAwake();
-            await Splunk.Time("http actuate_trunk_" + which, async () =>
+            await Time("http actuate_trunk_" + which, async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/actuate_trunk";
                 await HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new {which_trunk = which});
@@ -297,7 +287,7 @@ namespace TeslaApi
             if (string.IsNullOrWhiteSpace(password) && !string.IsNullOrWhiteSpace(Password) && Options.HasFlag(ConfigurationOptions.RemoteStartWithoutPassword)) password = Password;
             if (string.IsNullOrWhiteSpace(password)) throw new ArgumentException("A password is required to start.", password);
             await EnsureAwake();
-            await Splunk.Time("http start", async () =>
+            await Time("http start", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/remote_start_drive?password={password}";
                 await HttpHelper.HttpPostOAuth<JObject, string>(AccessToken, url, "");
@@ -326,6 +316,22 @@ namespace TeslaApi
         public class TeslaResult<T>
         {
             public T response;
+        }
+
+        private async Task Time(string key, Func<Task> function)
+        {
+            if (TelemetryProvider != null)
+                await TelemetryProvider.Time(key, function);
+            else
+                await function();
+        }
+
+        private async Task<T> Time<T>(string key, Func<Task<T>> function)
+        {
+            if (TelemetryProvider != null)
+                return await TelemetryProvider.Time(key, function);
+            else
+                return await function();
         }
     }
 }
