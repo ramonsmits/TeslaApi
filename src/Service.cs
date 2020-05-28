@@ -88,23 +88,24 @@ namespace TeslaApi
                 var url = $"{UrlBase}/oauth/token";
                 var result = await HttpHelper.HttpPost<TeslaOAuthResult, TeslaOAuthRequest>(url, new TeslaOAuthRequest());
                 AccessToken = result.access_token;
-                AccessTokenExpires = DateTime.Now.AddSeconds(result.expires_in);
+                AccessTokenExpires = DateTime.UtcNow.AddSeconds(result.expires_in);
             });
         }
 
         public async Task GetStatus(bool forceFetch = false)
         {
-            if (Data != null && Data.Fetched > DateTime.Now.AddMinutes(-1) && !forceFetch) return;
+            var now = DateTime.UtcNow;
+            if (Data != null && Data.Fetched > now.AddMinutes(-1) && !forceFetch) return;
             if (
                 Data != null && 
-                LastSleepRefresh > DateTime.Now.AddMinutes(-15) && 
+                LastSleepRefresh > now.AddMinutes(-15) && 
                 !Data.ChargeState.ChargingState.Equals("charging", StringComparison.OrdinalIgnoreCase) && 
                 Data.VehicleState.Locked && 
                 Data.DriveState.Power == 0 &&
                 !forceFetch) return;
             
             bool vehicleIsAwake;
-            if (string.IsNullOrWhiteSpace(AccessToken) || AccessTokenExpires < DateTime.Now.AddDays(1))
+            if (string.IsNullOrWhiteSpace(AccessToken) || AccessTokenExpires < now.AddDays(1))
             {
                 await Authenticate();
             }
@@ -119,7 +120,7 @@ namespace TeslaApi
                     VehicleId = vehicle.Id;
                     vehicleIsAwake = vehicle.State.Equals("online", StringComparison.CurrentCultureIgnoreCase);
                     VehicleState = vehicle.State;
-                    LastSleepRefresh = DateTime.Now;
+                    LastSleepRefresh = now;
                 }
                 else
                 {
@@ -137,20 +138,20 @@ namespace TeslaApi
             if (!vehicleIsAwake)
             {
                 if (forceFetch) Data = null;
-                if (Data == null || Data.Fetched < DateTime.Now.AddHours(-4))
+                if (Data == null || Data.Fetched < now.AddHours(-4))
                     vehicleIsAwake = await WakeVehicle();
                 else if (Data != null)
                 {
                     Data.State = "asleep";
-                    LastSleepRefresh = DateTime.Now;
+                    LastSleepRefresh = now;
                 }
             }
 
             if (vehicleIsAwake)
             {
                 await GetVehicleData();
-                LastRefresh = DateTime.Now;
-                LastSleepRefresh = DateTime.Now;
+                LastRefresh = now;
+                LastSleepRefresh = now;
             }
         }
 
@@ -176,12 +177,13 @@ namespace TeslaApi
 
         private async Task GetVehicleData()
         {
+            var now = DateTime.UtcNow;
             await Splunk.Time("http vehicle_data", async () =>
             {
                 var resultData = await HttpHelper.HttpGetOAuth<TeslaResult<VehicleData>>(AccessToken, $"{UrlBase}/api/1/vehicles/{VehicleId}/vehicle_data");
                 Data = resultData.response;
-                LastRefresh = DateTime.Now;
-                LastSleepRefresh = DateTime.Now;
+                LastRefresh = now;
+                LastSleepRefresh = now;
             });
         }
 
@@ -205,12 +207,13 @@ namespace TeslaApi
 
         public async Task<bool> WakeVehicle()
         {
-            if (WakeUpSent > DateTime.Now.AddMinutes(-1)) return false;
+            var now = DateTime.UtcNow;
+            if (WakeUpSent > now.AddMinutes(-1)) return false;
             return await Splunk.Time("http wake_up", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/wake_up";
                 var result = await HttpHelper.HttpPostOAuth<TeslaResult<Vehicle>, string>(AccessToken, url, "");
-                WakeUpSent = DateTime.Now;
+                WakeUpSent = now;
                 if (result?.response == null) return false; // || !result.response.Any()) return false;
                 return result.response.State.Equals("online", StringComparison.CurrentCultureIgnoreCase);
             });
