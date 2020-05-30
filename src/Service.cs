@@ -71,9 +71,9 @@ namespace TeslaApi
             IsInitialized = true;
         }
 
-        private async Task Authenticate()
+        private Task Authenticate()
         {
-            await Time("http oauth", async () =>
+            return Time("http oauth", async () =>
             {
                 var url = $"{UrlBase}/oauth/token";
                 var result = await HttpHelper.HttpPost<TeslaOAuthResult, TeslaOAuthRequest>(url, new TeslaOAuthRequest());
@@ -145,9 +145,9 @@ namespace TeslaApi
             }
         }
 
-        public async Task<List<Vehicle>> GetVehicles()
+        public Task<List<Vehicle>> GetVehicles()
         {
-            return await Time("http vehicles", async () =>
+            return Time("http vehicles", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles";
                 var result = await HttpHelper.HttpGetOAuth<TeslaResult<List<Vehicle>>>(AccessToken, url);
@@ -155,9 +155,9 @@ namespace TeslaApi
             });
         }
 
-        private async Task<Vehicle> GetVehicle()
+        private Task<Vehicle> GetVehicle()
         {
-            return await Time("http vehicle", async () =>
+            return Time("http vehicle", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}";
                 var result = await HttpHelper.HttpGetOAuth<TeslaResult<Vehicle>>(AccessToken, url);
@@ -165,10 +165,10 @@ namespace TeslaApi
             });
         }
 
-        private async Task GetVehicleData()
+        private Task GetVehicleData()
         {
             var now = DateTime.UtcNow;
-            await Time("http vehicle_data", async () =>
+            return Time("http vehicle_data", async () =>
             {
                 var resultData = await HttpHelper.HttpGetOAuth<TeslaResult<VehicleData>>(AccessToken, $"{UrlBase}/api/1/vehicles/{VehicleId}/vehicle_data");
                 Data = resultData.response;
@@ -195,11 +195,11 @@ namespace TeslaApi
                 await WakeVehicle();
         }
 
-        public async Task<bool> WakeVehicle()
+        public Task<bool> WakeVehicle()
         {
             var now = DateTime.UtcNow;
-            if (WakeUpSent > now.AddMinutes(-1)) return false;
-            return await Time("http wake_up", async () =>
+            if (WakeUpSent > now.AddMinutes(-1)) return Task.FromResult(false);
+            return Time("http wake_up", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/wake_up";
                 var result = await HttpHelper.HttpPostOAuth<TeslaResult<Vehicle>, string>(AccessToken, url, "");
@@ -212,36 +212,36 @@ namespace TeslaApi
         private async Task VehicleSimpleCommand(string command)
         {
             await EnsureAwake();
-            await Time("http " + command, async () =>
+            await Time("http " + command, () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/{command}";
-                await HttpHelper.HttpPostOAuth<JObject, string>(AccessToken, url, "");
+                return HttpHelper.HttpPostOAuth<JObject, string>(AccessToken, url, "");
             });
         }
 
-        public async Task ChargePortOpen()
+        public Task ChargePortOpen()
         {
-            await VehicleSimpleCommand("charge_port_door_open");
+            return VehicleSimpleCommand("charge_port_door_open");
         }
 
-        public async Task ChargePortClose()
+        public Task ChargePortClose()
         {
-            await VehicleSimpleCommand("charge_port_door_close");
+            return VehicleSimpleCommand("charge_port_door_close");
         }
 
-        public async Task HvacStart()
+        public Task HvacStart()
         {
-            await VehicleSimpleCommand("auto_conditioning_start");
+            return VehicleSimpleCommand("auto_conditioning_start");
         }
 
-        public async Task HvacStop()
+        public Task HvacStop()
         {
-            await VehicleSimpleCommand("auto_conditioning_stop");
+            return VehicleSimpleCommand("auto_conditioning_stop");
         }
 
-        public async Task Lock()
+        public Task Lock()
         {
-            await VehicleSimpleCommand("door_lock");
+            return VehicleSimpleCommand("door_lock");
         }
 
         public async Task Unlock()
@@ -272,14 +272,14 @@ namespace TeslaApi
             });
         }
 
-        public async Task Trunk()
+        public Task Trunk()
         {
-            await FrunkTrunk("rear");
+            return FrunkTrunk("rear");
         }
 
-        public async Task Frunk()
+        public Task Frunk()
         {
-            await FrunkTrunk("front");
+            return FrunkTrunk("front");
         }
 
         public async Task Start(string password = "")
@@ -287,10 +287,10 @@ namespace TeslaApi
             if (string.IsNullOrWhiteSpace(password) && !string.IsNullOrWhiteSpace(Password) && Options.HasFlag(ConfigurationOptions.RemoteStartWithoutPassword)) password = Password;
             if (string.IsNullOrWhiteSpace(password)) throw new ArgumentException("A password is required to start.", password);
             await EnsureAwake();
-            await Time("http start", async () =>
+            await Time("http start", () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/remote_start_drive?password={password}";
-                await HttpHelper.HttpPostOAuth<JObject, string>(AccessToken, url, "");
+                return HttpHelper.HttpPostOAuth<JObject, string>(AccessToken, url, "");
             });
         }
 
