@@ -48,6 +48,8 @@ namespace TeslaApi
         public Service(string email, string password, HttpClient httpClient, string vehicleName = "", ITelemetryProvider telemetryProvider = null)
         {
             if (httpClient == null) new ArgumentNullException(nameof(httpClient));
+            if (email == null) throw new ArgumentNullException(nameof(email));
+            if (password == null) throw new ArgumentNullException(nameof(password));
             if (httpClient.DefaultRequestHeaders.UserAgent.Count == 0) throw new ArgumentException("UserAgent must be set", nameof(httpClient));
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             this.httpClient = httpClient;
