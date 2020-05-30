@@ -317,5 +317,20 @@ namespace Tests
             await EnsureReady();
             await TeslaService.HonkHorn();
         }
+
+        [Test, Explicit]
+        public async Task SunRoofVent()
+        {
+            await EnsureReady();
+            await TeslaService.SunRoofVent();
+        }
+
+
+        [Test, Explicit]
+        public async Task SunRoofClose()
+        {
+            await EnsureReady();
+            await TeslaService.SunRoofClose();
+        }
     }
 }
