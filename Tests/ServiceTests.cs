@@ -27,7 +27,7 @@ namespace Tests
             if (!File.Exists(fileName))
                 Assert.Fail("Auth.user not found in Tests folder.");
             var lines = File.ReadAllLines(fileName);
-            if(lines.Length < 2)
+            if (lines.Length < 2)
                 Assert.Fail("Auth.user file did not have enough lines.");
             Email = lines[0];
             Password = lines[1];
@@ -199,7 +199,7 @@ namespace Tests
         {
             await EnsureReady();
             var initialState = TeslaService.Data.ChargeState.ChargeDoorOpen;
-            if(!initialState.HasValue) Assert.Inconclusive("Null state.");
+            if (!initialState.HasValue) Assert.Inconclusive("Null state.");
             if (initialState.Value)
             {
                 Console.WriteLine("Already open");
@@ -280,7 +280,7 @@ namespace Tests
         [Test, Order(301)]
         public async Task ChangeVehicle()
         {
-            if(string.IsNullOrWhiteSpace(SecondVehicleName))
+            if (string.IsNullOrWhiteSpace(SecondVehicleName))
                 Assert.Inconclusive("Second vehicle name not specified.");
             await EnsureInitialized();
             var vehicles = await TeslaService.GetVehicles();
@@ -304,5 +304,18 @@ namespace Tests
             Assert.AreEqual(SecondVehicleName, TeslaService.Data.DisplayName, "Second vehicle name expected.");
         }
 
+        [Test, Explicit]
+        public async Task FlashLight()
+        {
+            await EnsureReady();
+            await TeslaService.FlashLights();
+        }
+
+        [Test, Explicit]
+        public async Task HonkHorn()
+        {
+            await EnsureReady();
+            await TeslaService.HonkHorn();
+        }
     }
 }

@@ -87,13 +87,13 @@ namespace TeslaApi
             var now = DateTime.UtcNow;
             if (Data != null && Data.Fetched > now.AddMinutes(-1) && !forceFetch) return;
             if (
-                Data != null && 
-                LastSleepRefresh > now.AddMinutes(-15) && 
-                !Data.ChargeState.ChargingState.Equals("charging", StringComparison.OrdinalIgnoreCase) && 
-                Data.VehicleState.Locked && 
+                Data != null &&
+                LastSleepRefresh > now.AddMinutes(-15) &&
+                !Data.ChargeState.ChargingState.Equals("charging", StringComparison.OrdinalIgnoreCase) &&
+                Data.VehicleState.Locked &&
                 Data.DriveState.Power == 0 &&
                 !forceFetch) return;
-            
+
             bool vehicleIsAwake;
             if (string.IsNullOrWhiteSpace(AccessToken) || AccessTokenExpires < now.AddDays(1))
             {
@@ -250,6 +250,16 @@ namespace TeslaApi
             Data.VehicleState.Locked = false;
         }
 
+        public async Task HonkHorn()
+        {
+            await VehicleSimpleCommand("honk_horn");
+        }
+
+        public async Task FlashLights()
+        {
+            await VehicleSimpleCommand("flash_lights");
+        }
+
         public async Task SeatHeater(Seat seat, int level)
         {
             await EnsureAwake();
@@ -267,7 +277,7 @@ namespace TeslaApi
             await Time("http actuate_trunk_" + which, async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/actuate_trunk";
-                await HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new {which_trunk = which});
+                await HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new { which_trunk = which });
                 Data.VehicleState.Locked = false;
             });
         }
