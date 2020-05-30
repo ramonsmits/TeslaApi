@@ -47,9 +47,10 @@ namespace TeslaApi
         /// <param name="vehicleName"></param>
         public Service(string email, string password, HttpClient httpClient, string vehicleName = "", ITelemetryProvider telemetryProvider = null)
         {
-            if (httpClient == null) new ArgumentNullException(nameof(httpClient));
-            if (email == null) throw new ArgumentNullException(nameof(email));
-            if (password == null) throw new ArgumentNullException(nameof(password));
+            Guard.AgainstNull(nameof(httpClient), httpClient);
+            Guard.AgainstNullAndWhiteSpace(nameof(email), email);
+            Guard.AgainstNullAndWhiteSpace(nameof(password), password);
+
             if (httpClient.DefaultRequestHeaders.UserAgent.Count == 0) throw new ArgumentException("UserAgent must be set", nameof(httpClient));
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             this.httpClient = httpClient;
@@ -177,6 +178,8 @@ namespace TeslaApi
 
         public void SetVehicle(long vehicleId, string vehicleName)
         {
+            Guard.AgainstNullAndWhiteSpace(nameof(vehicleName), vehicleName);
+
             VehicleId = vehicleId;
             VehicleName = vehicleName;
             Data = null;
@@ -250,6 +253,8 @@ namespace TeslaApi
 
         public async Task SeatHeater(Seat seat, int level)
         {
+            if (level < 0 || level > 3) throw new ArgumentOutOfRangeException(nameof(level), level, "Must be between 0 and 3");
+
             await EnsureAwake();
             await Time("http remote_seat_heater_request_" + seat, async () =>
             {
