@@ -318,20 +318,20 @@ namespace TeslaApi
             public T response;
         }
 
-        private async Task Time(string key, Func<Task> function)
+        private Task Time(string key, Func<Task> function)
         {
             if (TelemetryProvider != null)
-                await TelemetryProvider.Time(key, function);
+                return TelemetryProvider.Time(key, function);
             else
-                await function();
+                return function();
         }
 
-        private async Task<T> Time<T>(string key, Func<Task<T>> function)
+        private Task<T> Time<T>(string key, Func<Task<T>> function)
         {
             if (TelemetryProvider != null)
-                return await TelemetryProvider.Time(key, function);
+                return TelemetryProvider.Time(key, function);
             else
-                return await function();
+                return function();
         }
     }
 }
