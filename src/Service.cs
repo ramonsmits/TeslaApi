@@ -344,16 +344,22 @@ namespace TeslaApi
                 return await function();
         }
 
-        public async Task SunRoofClose()
+        public Task SunRoofClose()
         {
-            var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/sun_roof_control";
-            await HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new { state = "close" });
+            return Time("http start", () =>
+            {
+                var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/sun_roof_control";
+                return HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new { state = "close" });
+            });
         }
 
-        public async Task SunRoofVent()
+        public Task SunRoofVent()
         {
-            var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/sun_roof_control";
-            await HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new { state = "vent" });
+            return Time("http start", () =>
+            {
+                var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/sun_roof_control";
+                return HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new { state = "vent" });
+            });
         }
     }
 }
