@@ -2,6 +2,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -18,7 +20,7 @@ namespace Tests
         private string SecondVehicleName;
         private Service TeslaService;
         private string DeviceId;
-
+        private HttpClient httpClient;
         [SetUp]
         public void Setup()
         {
@@ -35,6 +37,9 @@ namespace Tests
                 VehicleName = lines[2];
             if (lines.Length >= 4)
                 SecondVehicleName = lines[3];
+
+            httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TeslaApiTests (https://github.com/skipfire/TeslaApi/)");
         }
 
         private async Task EnsureInitialized()
@@ -53,7 +58,7 @@ namespace Tests
         [Test, Order(0)]
         public async Task Initialize()
         {
-            TeslaService = new Service(Email, Password, VehicleName);
+            TeslaService = new Service(Email, Password, httpClient, VehicleName);
             await TeslaService.Initialize();
             Assert.True(TeslaService.IsAuthenticated);
         }

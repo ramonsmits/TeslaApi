@@ -7,72 +7,41 @@ using Newtonsoft.Json;
 
 namespace TeslaApi
 {
-    internal class HttpHelper
+    internal static class HttpHelper
     {
-        internal static string UserAgent;
-        internal static IWebProxy Proxy;
-
-        internal static async Task<TReturn> HttpGetOAuth<TReturn>(string authorization, string url)
+        internal static async Task<TReturn> HttpGetOAuth<TReturn>(this HttpClient hc, string url)
         {
-            using (var hc = CreateHttpClient())
+            var result = await hc.GetAsync(url);
+            result.EnsureSuccessStatusCode();
+            var resultContent = await result.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(resultContent)) return default;
+            return JsonConvert.DeserializeObject<TReturn>(resultContent);
+        }
+
+        internal static async Task<TReturn> HttpPost<TReturn, TBody>(this HttpClient hc, string url, TBody body)
+        {
+            var bodyContent = JsonConvert.SerializeObject(body);
+            using (var content = new StringContent(bodyContent, Encoding.UTF8, "application/json"))
             {
-                AddAgent(hc);
-                hc.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
-                var result = await hc.GetAsync(url);
+                var result = await hc.PostAsync(url, content);
+                result.EnsureSuccessStatusCode();
                 var resultContent = await result.Content.ReadAsStringAsync();
-                hc.DefaultRequestHeaders.Remove("Authorization");
-                if (string.IsNullOrWhiteSpace(resultContent)) return default(TReturn);
+                if (string.IsNullOrWhiteSpace(resultContent)) return default;
                 return JsonConvert.DeserializeObject<TReturn>(resultContent);
             }
         }
 
-        internal static async Task<TReturn> HttpPost<TReturn, TBody>(string url, TBody body)
+        internal static async Task<TReturn> HttpPostOAuth<TReturn, TBody>(this HttpClient hc, string url, TBody body)
         {
             var bodyContent = JsonConvert.SerializeObject(body);
             using (var content = new StringContent(bodyContent, Encoding.UTF8, "application/json"))
             {
-                using (var hc = CreateHttpClient())
-                {
-                    AddAgent(hc);
-                    hc.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    var result = await hc.PostAsync(url, content);
-                    var resultContent = await result.Content.ReadAsStringAsync();
-                    if (string.IsNullOrWhiteSpace(resultContent)) return default(TReturn);
-                    return JsonConvert.DeserializeObject<TReturn>(resultContent);
-                }
+                var result = await hc.PostAsync(url, content);
+                result.EnsureSuccessStatusCode();
+                var resultContent = await result.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(resultContent)) return default;
+                return JsonConvert.DeserializeObject<TReturn>(resultContent);
             }
-        }
-
-        internal static async Task<TReturn> HttpPostOAuth<TReturn, TBody>(string authorization, string url, TBody body)
-        {
-            var bodyContent = JsonConvert.SerializeObject(body);
-            using (var content = new StringContent(bodyContent, Encoding.UTF8, "application/json"))
-            {
-                using (var hc = CreateHttpClient())
-                {
-                    AddAgent(hc);
-                    hc.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
-                    var result = await hc.PostAsync(url, content);
-                    var resultContent = await result.Content.ReadAsStringAsync();
-                    hc.DefaultRequestHeaders.Remove("Authorization");
-                    if (string.IsNullOrWhiteSpace(resultContent)) return default(TReturn);
-                    return JsonConvert.DeserializeObject<TReturn>(resultContent);
-                }
-            }
-        }
-
-        private static void AddAgent(HttpClient hc)
-        {
-            if (string.IsNullOrWhiteSpace(UserAgent)) return;
-            var userAgent = new ProductInfoHeaderValue(new ProductHeaderValue(UserAgent));
-            hc.DefaultRequestHeaders.UserAgent.Add(userAgent);
-        }
-
-        private static HttpClient CreateHttpClient()
-        {
-            if (Proxy != null)
-                return new HttpClient(new HttpClientHandler {Proxy = Proxy});
-            return new HttpClient();
         }
     }
 }

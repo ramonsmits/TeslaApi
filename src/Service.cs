@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using TeslaApi.Enums;
@@ -21,7 +21,9 @@ namespace TeslaApi
 
         private static string Email;
         private static string Password;
-        private ITelemetryProvider TelemetryProvider;
+
+        private readonly ITelemetryProvider TelemetryProvider;
+        private readonly HttpClient httpClient;
 
         public VehicleData Data;
         public string VehicleName { get; private set; }
@@ -36,17 +38,6 @@ namespace TeslaApi
         private long VehicleId;
         private DateTime WakeUpSent = DateTime.MinValue;
 
-        public void SetWebProxy(IWebProxy webProxy)
-        {
-            HttpHelper.Proxy = webProxy;
-            TelemetryProvider?.SetWebProxy(webProxy);
-        }
-
-        public void ClearWebProxy()
-        {
-            HttpHelper.Proxy = null;
-            TelemetryProvider.ClearWebProxy();
-        }
 
         /// <summary>
         /// Vehicle name is optional, but if not specified and you have multiple cars, it may not choose the one you want.  Either password or access token must be supplied.
@@ -54,13 +45,17 @@ namespace TeslaApi
         /// <param name="email"></param>
         /// <param name="password"></param>
         /// <param name="vehicleName"></param>
-        public Service(string email, string password, string vehicleName = "", ITelemetryProvider telemetryProvider = null)
+        public Service(string email, string password, HttpClient httpClient, string vehicleName = "", ITelemetryProvider telemetryProvider = null)
         {
+            if (httpClient == null) new ArgumentNullException(nameof(httpClient));
+            if (httpClient.DefaultRequestHeaders.UserAgent.Count == 0) throw new ArgumentException("UserAgent must be set", nameof(httpClient));
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            this.httpClient = httpClient;
+
             Email = email;
             Password = password;
             VehicleName = vehicleName;
             IsInitialized = false;
-            HttpHelper.UserAgent = "PintSizeMeTeslaApi";
             TelemetryProvider = telemetryProvider;
         }
 
@@ -76,9 +71,10 @@ namespace TeslaApi
             await Time("http oauth", async () =>
             {
                 var url = $"{UrlBase}/oauth/token";
-                var result = await HttpHelper.HttpPost<TeslaOAuthResult, TeslaOAuthRequest>(url, new TeslaOAuthRequest());
+                var result = await httpClient.HttpPost<TeslaOAuthResult, TeslaOAuthRequest>(url, new TeslaOAuthRequest());
                 AccessToken = result.access_token;
                 AccessTokenExpires = DateTime.UtcNow.AddSeconds(result.expires_in);
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
             });
         }
 
@@ -87,13 +83,13 @@ namespace TeslaApi
             var now = DateTime.UtcNow;
             if (Data != null && Data.Fetched > now.AddMinutes(-1) && !forceFetch) return;
             if (
-                Data != null && 
-                LastSleepRefresh > now.AddMinutes(-15) && 
-                !Data.ChargeState.ChargingState.Equals("charging", StringComparison.OrdinalIgnoreCase) && 
-                Data.VehicleState.Locked && 
+                Data != null &&
+                LastSleepRefresh > now.AddMinutes(-15) &&
+                !Data.ChargeState.ChargingState.Equals("charging", StringComparison.OrdinalIgnoreCase) &&
+                Data.VehicleState.Locked &&
                 Data.DriveState.Power == 0 &&
                 !forceFetch) return;
-            
+
             bool vehicleIsAwake;
             if (string.IsNullOrWhiteSpace(AccessToken) || AccessTokenExpires < now.AddDays(1))
             {
@@ -150,7 +146,7 @@ namespace TeslaApi
             return await Time("http vehicles", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles";
-                var result = await HttpHelper.HttpGetOAuth<TeslaResult<List<Vehicle>>>(AccessToken, url);
+                var result = await httpClient.HttpGetOAuth<TeslaResult<List<Vehicle>>>(url);
                 return result.response;
             });
         }
@@ -160,7 +156,7 @@ namespace TeslaApi
             return await Time("http vehicle", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}";
-                var result = await HttpHelper.HttpGetOAuth<TeslaResult<Vehicle>>(AccessToken, url);
+                var result = await httpClient.HttpGetOAuth<TeslaResult<Vehicle>>(url);
                 return result.response;
             });
         }
@@ -170,7 +166,7 @@ namespace TeslaApi
             var now = DateTime.UtcNow;
             await Time("http vehicle_data", async () =>
             {
-                var resultData = await HttpHelper.HttpGetOAuth<TeslaResult<VehicleData>>(AccessToken, $"{UrlBase}/api/1/vehicles/{VehicleId}/vehicle_data");
+                var resultData = await httpClient.HttpGetOAuth<TeslaResult<VehicleData>>($"{UrlBase}/api/1/vehicles/{VehicleId}/vehicle_data");
                 Data = resultData.response;
                 LastRefresh = now;
                 LastSleepRefresh = now;
@@ -202,7 +198,7 @@ namespace TeslaApi
             return await Time("http wake_up", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/wake_up";
-                var result = await HttpHelper.HttpPostOAuth<TeslaResult<Vehicle>, string>(AccessToken, url, "");
+                var result = await httpClient.HttpPostOAuth<TeslaResult<Vehicle>, string>(url, "");
                 WakeUpSent = now;
                 if (result?.response == null) return false; // || !result.response.Any()) return false;
                 return result.response.State.Equals("online", StringComparison.CurrentCultureIgnoreCase);
@@ -215,7 +211,7 @@ namespace TeslaApi
             await Time("http " + command, async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/{command}";
-                await HttpHelper.HttpPostOAuth<JObject, string>(AccessToken, url, "");
+                await httpClient.HttpPostOAuth<JObject, string>(url, "");
             });
         }
 
@@ -256,7 +252,7 @@ namespace TeslaApi
             await Time("http remote_seat_heater_request_" + seat, async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/remote_seat_heater_request";
-                await HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new { heater = seat, level });
+                await httpClient.HttpPostOAuth<JObject, object>(url, new { heater = seat, level });
                 Data.VehicleState.Locked = false;
             });
         }
@@ -267,7 +263,7 @@ namespace TeslaApi
             await Time("http actuate_trunk_" + which, async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/actuate_trunk";
-                await HttpHelper.HttpPostOAuth<JObject, object>(AccessToken, url, new {which_trunk = which});
+                await httpClient.HttpPostOAuth<JObject, object>(url, new { which_trunk = which });
                 Data.VehicleState.Locked = false;
             });
         }
@@ -290,7 +286,7 @@ namespace TeslaApi
             await Time("http start", async () =>
             {
                 var url = $"{UrlBase}/api/1/vehicles/{VehicleId}/command/remote_start_drive?password={password}";
-                await HttpHelper.HttpPostOAuth<JObject, string>(AccessToken, url, "");
+                await httpClient.HttpPostOAuth<JObject, string>(url, "");
             });
         }
 
